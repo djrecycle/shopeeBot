@@ -1,0 +1,28 @@
+# Virtual Environment
+shopee-venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editor / IDE
+.vscode/
+
+# Chrome Profiling & Session State (SANGAT PENTING: Jangan upload ini agar cookie akun Anda tidak bocor)
+shopee_debug_profile/
+shopee_profile/
+test_profile_*/
+shopee_state.json
+
+# Scraping Results & Data (Biasanya data hasil scraping tidak perlu diupload ke repo)
+shopee_links.csv
+hasil_md/
+gambar/
+
+# Debugging Artifacts
+debug.html
+debug.png
+debug_search_*.png
