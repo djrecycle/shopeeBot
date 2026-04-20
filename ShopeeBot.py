@@ -38,10 +38,11 @@ def main():
         print("  [2] Scrape Links   - Cari link produk & simpan ke CSV")
         print("  [3] Scrape Produk  - Ambil info produk, variasi, & gambar")
         print("  [4] Send Message   - Kirim pesan promo ke toko")
+        print("  [5] Preview Hasil  - Lihat hasil scrape dalam bentuk website")
         print("  [0] Keluar")
         print("─" * 55)
         
-        pilihan = input("Masukkan nomor menu (0-4): ").strip()
+        pilihan = input("Masukkan nomor menu (0-5): ").strip()
         
         if pilihan == "1":
             run_script("open_browser.py")
@@ -51,6 +52,8 @@ def main():
             run_script("shoppescrap.py")
         elif pilihan == "4":
             run_script("send_message.py")
+        elif pilihan == "5":
+            run_script("generate_site.py")
         elif pilihan == "0":
             print("\nTerima kasih telah menggunakan ShopeeBot Scraper. Sampai jumpa! 👋")
             sys.exit(0)

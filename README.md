@@ -95,6 +95,7 @@ Pilih **Nomor Menu** sesuai dengan apa yang akan Anda jalankan:
 - **[2] Scrape Links**: Mulailah dari sini untuk mengumpulkan link ke dalam CSV.
 - **[3] Scrape Produk**: Jika CSV sudah berisi data link, gunakan menu ini untuk mengekstrak detail produk dan mengunduh foto/gambar produk.
 - **[4] Send Message**: Gunakan menu ini untuk mem-broadcast chat ke seller berdasarkan data yang sudah ada di CSV.
+- **[5] Preview Hasil**: Gunakan menu ini untuk melihat seluruh hasil scraping Anda dalam bentuk dashboard website yang modern dan interaktif.
 
 ---
 
