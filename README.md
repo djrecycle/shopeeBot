@@ -91,9 +91,10 @@ Anda akan melihat tampilan Header Menu:
 ```
 
 Pilih **Nomor Menu** sesuai dengan apa yang akan Anda jalankan:
-- **[1] Scrape Links**: Mulailah dari sini untuk mengumpulkan link ke dalam CSV.
-- **[2] Scrape Produk**: Jika CSV sudah berisi data link, gunakan menu ini untuk mengekstrak detail produk dan mengunduh foto/gambar produk.
-- **[3] Send Message**: Gunakan menu ini untuk mem-broadcast chat ke seller berdasarkan data yang sudah ada di CSV.
+- **[1] Login Shopee**: Langkah awal yang sangat disarankan. Buka browser melalui menu ini untuk Login ke akun Shopee Anda secara manual agar sesi/cookie tersimpan.
+- **[2] Scrape Links**: Mulailah dari sini untuk mengumpulkan link ke dalam CSV.
+- **[3] Scrape Produk**: Jika CSV sudah berisi data link, gunakan menu ini untuk mengekstrak detail produk dan mengunduh foto/gambar produk.
+- **[4] Send Message**: Gunakan menu ini untuk mem-broadcast chat ke seller berdasarkan data yang sudah ada di CSV.
 
 ---
 

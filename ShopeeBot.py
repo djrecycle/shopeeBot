@@ -34,19 +34,22 @@ def main():
     while True:
         print_header()
         print("Menu Utama:")
-        print("  [1] Scrape Links   - Cari link produk & simpan ke CSV")
-        print("  [2] Scrape Produk  - Ambil info produk, variasi, & gambar")
-        print("  [3] Send Message   - Kirim pesan promo ke toko")
+        print("  [1] Login Shopee   - Buka browser & login dulu (PENTING)")
+        print("  [2] Scrape Links   - Cari link produk & simpan ke CSV")
+        print("  [3] Scrape Produk  - Ambil info produk, variasi, & gambar")
+        print("  [4] Send Message   - Kirim pesan promo ke toko")
         print("  [0] Keluar")
         print("─" * 55)
         
-        pilihan = input("Masukkan nomor menu (0-3): ").strip()
+        pilihan = input("Masukkan nomor menu (0-4): ").strip()
         
         if pilihan == "1":
-            run_script("scrape_links.py")
+            run_script("open_browser.py")
         elif pilihan == "2":
-            run_script("shoppescrap.py")
+            run_script("scrape_links.py")
         elif pilihan == "3":
+            run_script("shoppescrap.py")
+        elif pilihan == "4":
             run_script("send_message.py")
         elif pilihan == "0":
             print("\nTerima kasih telah menggunakan ShopeeBot Scraper. Sampai jumpa! 👋")
