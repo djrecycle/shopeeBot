@@ -19,10 +19,20 @@ Bot ini dilengkapi dengan antarmuka terminal interaktif yang sangat mudah diguna
    - Otomatis membuka URL produk yang belum diproses dari file CSV.
    - Menyimpan seluruh informasi penting seperti Judul, Harga, Deskripsi, dan Spesifikasi lengkap.
    - Mampu mengekstrak **semua variasi** beserta harga masing-masing.
+   - Mendeteksi dan mencocokkan secara otomatis **Kode Kategori** Shopee (berdasarkan referensi `Kode_Kategori.xlsx`).
    - Mengunduh otomatis **gambar aseli/resolusi tinggi** dari produk (tanpa watermark).
    - Seluruh data diekstrak rapih ke dalam format file Markdown (`.md`).
 
-3. **Send Message (Pengirim Pesan Otomatis)** ✉️
+3. **Preview Hasil & Ekspor Excel (Dashboard Interaktif)** 📊
+   - Melihat seluruh hasil scraping Anda dalam bentuk dashboard website yang modern dan interaktif.
+   - Mengatur persentase kenaikan **Harga Upload** secara dinamis (contoh: +20%) langsung dari antarmuka web.
+   - Mengekspor langsung produk ke dalam format `.xlsx` (menggunakan susunan `Template.xlsx`) yang langsung siap di-upload (Mass Upload) ke Shopee.
+
+4. **Update Produk (Re-scrape)** 🔄
+   - Memperbarui data produk yang sebelumnya sudah pernah di-scrape (berguna saat ada perubahan harga di toko sumber atau update fitur scraper).
+   - Tanpa harus memisahkan file CSV, bot cerdas memilih ulang produk yang sebelumnya berstatus *Done*.
+
+5. **Send Message (Pengirim Pesan Otomatis)** ✉️
    - Kirim *Automated Chat* kepada penjual dari daftar link produk (misal: penawaran afiliasi/dropship).
    - Smart Filtering: Hanya mengirim 1 kali pesan untuk penjual yang sama (menggunakan ID Toko).
    - Support seleksi data berdasarkan Keyword atau Kategori.
@@ -88,6 +98,18 @@ Anda akan melihat tampilan Header Menu:
 ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚══════╝╚══════╝
                                BOT SCRAPER               
 =======================================================
+        All-in-One Automation Tools for Shopee         
+=======================================================
+
+Menu Utama:
+  [1] Login Shopee   - Buka browser & login dulu (PENTING)
+  [2] Scrape Links   - Cari link produk & simpan ke CSV
+  [3] Scrape Produk  - Ambil info produk, variasi, & gambar
+  [4] Send Message   - Kirim pesan promo ke toko
+  [5] Preview Hasil  - Lihat hasil scrape dalam bentuk website
+  [6] Update Produk  - Perbarui/Re-scrape produk yang sudah di-scrape
+  [0] Keluar
+───────────────────────────────────────────────────────
 ```
 
 Pilih **Nomor Menu** sesuai dengan apa yang akan Anda jalankan:
@@ -95,7 +117,8 @@ Pilih **Nomor Menu** sesuai dengan apa yang akan Anda jalankan:
 - **[2] Scrape Links**: Mulailah dari sini untuk mengumpulkan link ke dalam CSV.
 - **[3] Scrape Produk**: Jika CSV sudah berisi data link, gunakan menu ini untuk mengekstrak detail produk dan mengunduh foto/gambar produk.
 - **[4] Send Message**: Gunakan menu ini untuk mem-broadcast chat ke seller berdasarkan data yang sudah ada di CSV.
-- **[5] Preview Hasil**: Gunakan menu ini untuk melihat seluruh hasil scraping Anda dalam bentuk dashboard website yang modern dan interaktif.
+- **[5] Preview Hasil**: Gunakan menu ini untuk melihat seluruh hasil scraping Anda dalam bentuk dashboard website yang modern dan interaktif. Anda juga dapat mengubah persentase Harga Upload dan melakukan Ekspor ke file Excel untuk keperluan *Mass Upload*.
+- **[6] Update Produk**: Gunakan menu ini untuk men-scrape ulang (memperbarui) data produk yang sudah pernah di-scrape sebelumnya (misal ketika ada perubahan harga dari toko sumber atau update fitur baru pada scraper).
 
 ---
 
@@ -104,6 +127,8 @@ Pilih **Nomor Menu** sesuai dengan apa yang akan Anda jalankan:
 Setelah dijalankan, skrip secara otomatis akan membuat file dan struktur folder berikut:
 
 - `shopee_links.csv` — File inti untuk menyimpan database pencarian Anda. (Termasuk Status Scrape dan Status Chat).
+- `Kode_Kategori.xlsx` — (Disediakan) Basis data referensi nama kategori ke kode angka unik kategori Shopee.
+- `Template.xlsx` — (Disediakan) Template master Shopee yang menjadi dasar format hasil file ekspor `.xlsx`.
 - `hasil_md/` — Folder tempat di mana hasil kompilasi detail setiap produk (dalam format Markdown/MD) akan disimpan.
 - `gambar/` — Folder unduhan galeri serta variasi foto alat produk Anda.
 - `shopee_debug_profile/` — Ini akan dibuat secara independen oleh Google Chrome untuk menyimpan cookie session Anda *(Ini diabaikan di .gitignore agar tidak ter-upload tanpa disengaja)*.
