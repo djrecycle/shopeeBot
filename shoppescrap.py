@@ -4,6 +4,45 @@ import os
 import time
 import subprocess
 import re
+import pandas as pd
+from difflib import SequenceMatcher
+
+# ========================
+# KODE KATEGORI MAPPING
+# ========================
+EXCEL_CATS = []
+try:
+    _df = pd.read_excel("Kode_Kategori.xlsx")
+    def _norm(s):
+        s = re.sub(r"^Shopee\s+", "", s, flags=re.IGNORECASE)
+        s = re.sub(r"^\d+-", "", s)
+        return re.sub(r"[^a-z0-9]", "", s.lower())
+    for _, _row in _df.iterrows():
+        if not pd.isna(_row.get("Nama Kategori")) and not pd.isna(_row.get("Kode Kategori")):
+            EXCEL_CATS.append((_norm(str(_row["Nama Kategori"])), str(_row["Kode Kategori"]), str(_row["Nama Kategori"])))
+except Exception as e:
+    print("⚠️ Gagal memuat Kode_Kategori.xlsx:", e)
+
+def find_kode_kategori(md_cat):
+    if not md_cat or md_cat == "-": return None
+    norm_md = _norm(md_cat)
+    for n_exc, code, name in EXCEL_CATS:
+        if n_exc == norm_md: return code
+    matches = [e for e in EXCEL_CATS if e[0].startswith(norm_md)]
+    if matches:
+        for e in matches:
+            if e[0].endswith("lainnya"): return e[1]
+        return matches[0][1]
+    matches = [e for e in EXCEL_CATS if norm_md.startswith(e[0])]
+    if matches:
+        matches.sort(key=lambda x: len(x[0]), reverse=True)
+        return matches[0][1]
+    best_ratio, best_code = 0, None
+    for n_exc, code, name in EXCEL_CATS:
+        r = SequenceMatcher(None, norm_md, n_exc).ratio()
+        if r > best_ratio: best_ratio, best_code = r, code
+    if best_ratio > 0.8: return best_code
+    return None
 
 # ========================
 # LOAD URL DARI FILE
@@ -11,14 +50,21 @@ import re
 URL_FILE = "shopee_links.csv"
 MAX_URLS = 5  # Batasi jumlah URL yang diproses
 VARIASI = ["Warna", "Model", "Mode", "Ukuran", "Kapasitas", "Tipe", "Tipe Hp", "Type Hp","Type", "Varian", "Size", "Color","Piano", "Keyboard", "Keyboard", "Piano","Senar","Senar Gitar","Senar Bass","Senar Bass Elektrik","Senar Nomor"
-"Nomor Senar","Motif","Jenis","Jenis Barang"]
+"Nomor Senar","Motif","Jenis","Jenis Barang","Laidback Stick", "Variasi", "Variasi Produk", "Tipe Kabel"]
 
 def load_urls():
-    user_url = input("\nMasukkan URL Shopee yang ingin discrape (biarkan kosong untuk mengambil dari shopee_links.csv): ").strip()
+    import sys
+    is_update_mode = "--update" in sys.argv
+    
+    prompt_msg = "\nMasukkan URL Shopee yang ingin di-update" if is_update_mode else "\nMasukkan URL Shopee yang ingin discrape"
+    prompt_msg += " (pisahkan dengan koma jika >1, biarkan kosong untuk mengambil dari CSV): "
+    
+    user_url = input(prompt_msg).strip()
     if user_url:
-        print(f"📋 Memproses 1 URL dari input manual.")
+        urls = [u.strip() for u in user_url.split(",") if u.strip()]
+        print(f"📋 Memproses {len(urls)} URL dari input manual.")
         cat = get_category()
-        return [{"url": user_url, "kategori": cat}]
+        return [{"url": u, "kategori": cat} for u in urls]
 
     import pandas as pd
     try:
@@ -33,24 +79,37 @@ def load_urls():
     else:
         df["Status"] = df["Status"].fillna("")
         
-    # Ambil baris yang belum di-"Done" atau di-"Skip"
-    # Menambahkan pengecekan status tambahan jika ada format lain
-    unscraped_df = df[~df["Status"].isin(["Done", "Skip", "Skip (Toko Sama)", "Failed", "Sent"])]
+    is_update_mode = "--update" in sys.argv
+    
+    # Ambil baris sesuai mode
+    if is_update_mode:
+        unscraped_df = df # Ambil semua URL tanpa filter status
+    else:
+        unscraped_df = df[~df["Status"].isin(["Done", "Skip", "Skip (Toko Sama)", "Failed", "Sent"])]
 
     if unscraped_df.empty:
-        print("🎉 Semua URL di shopee_links.csv sudah selesai discrape!")
+        if is_update_mode:
+            print("🎉 Tidak ada URL sama sekali di shopee_links.csv!")
+        else:
+            print("🎉 Semua URL di shopee_links.csv sudah selesai discrape!")
         exit()
 
     # Berikan pilihan Keyword/Toko
     if "Keyword" in df.columns:
         keywords = unscraped_df["Keyword"].value_counts()
-        print("\n📂 Pilih kelompok URL yang ingin discrape:")
+        if is_update_mode:
+            print("\n📂 Pilih kelompok URL yang ingin di-UPDATE:")
+        else:
+            print("\n📂 Pilih kelompok URL yang ingin discrape:")
         print("─" * 30)
         print("  [0] Semua Keyword/Toko (Campur)")
         
         kw_list = list(keywords.items())
         for i, (kw, count) in enumerate(kw_list, 1):
-            print(f"  [{i}] {kw} ({count} url belum diproses)")
+            if is_update_mode:
+                print(f"  [{i}] {kw} ({count} url)")
+            else:
+                print(f"  [{i}] {kw} ({count} url belum diproses)")
         print("─" * 30)
         
         while True:
@@ -89,6 +148,26 @@ def load_urls():
         result.append({"url": link, "kategori": str(cat)})
         
     return result
+
+def calculate_upload_price(price_str):
+    if not price_str or price_str == "Tidak ditemukan" or price_str == "-":
+        return price_str
+    
+    try:
+        parts = str(price_str).split('-')
+        result_parts = []
+        for p in parts:
+            num_str = ''.join(filter(str.isdigit, p))
+            if num_str:
+                val = int(num_str)
+                up_val = int(val * 1.2)
+                result_parts.append(f"Rp{up_val:,}".replace(',', '.'))
+            else:
+                result_parts.append(p.strip())
+        
+        return " - ".join(result_parts)
+    except:
+        return price_str
 
 def update_status(url, status):
     """Update status (Done/Skip) produk di CSV."""
@@ -357,6 +436,10 @@ def scrape_shopee():
                                 val_text = val_text.replace("\n", " ").replace("|", "&#124;").strip()
                                 if key:
                                     spec_table_md += f"| **{key}** | {val_text} |\n"
+                                    if key.strip().lower() == "kategori":
+                                        kode = find_kode_kategori(val_text)
+                                        if kode:
+                                            spec_table_md += f"| **Kode Kategori** | {kode} |\n"
                             except Exception:
                                 pass
                         
@@ -512,10 +595,13 @@ def scrape_shopee():
             except:
                 pass
 
+            harga_upload = calculate_upload_price(price)
+            
             md_content = f"""# {title}
 
 ## 💰 Harga
-{price}
+Harga Asli: {price}
+<span style="color: green; font-weight: bold;">Harga Upload: {harga_upload}</span>
 
 ## 🏪 Link Toko
 {shop_link}
@@ -534,10 +620,14 @@ def scrape_shopee():
 
             if variant_results:
                 for v in variant_results:
+                    harga_asli = v['harga']
+                    harga_up = calculate_upload_price(harga_asli)
+                    harga_teks = f"{harga_asli} <span style='color: green; font-weight: bold;'>(Upload: {harga_up})</span>" if harga_asli != "-" else "-"
+                    
                     if v.get("gambar"):
-                        md_content += f"- {v['variasi']} : {v['harga']} | [Lihat Gambar Variasi]({v['gambar']})\n"
+                        md_content += f"- {v['variasi']} : {harga_teks} | [Lihat Gambar Variasi]({v['gambar']})\n"
                     else:
-                        md_content += f"- {v['variasi']} : {v['harga']}\n"
+                        md_content += f"- {v['variasi']} : {harga_teks}\n"
             else:
                 md_content += "- Tidak ada variasi\n"
 
