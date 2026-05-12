@@ -195,19 +195,34 @@ def generate_site():
             padding: 10px 0;
         }}
 
-        .cat-group {{ margin-bottom: 15px; }}
+        .cat-group {{ margin-bottom: 5px; }}
         .cat-label {{
-            padding: 10px 24px;
-            font-size: 0.7rem;
+            padding: 12px 24px;
+            font-size: 0.75rem;
             font-weight: 700;
             color: var(--primary);
             text-transform: uppercase;
             letter-spacing: 1px;
-            opacity: 0.8;
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: rgba(255,255,255,0.02);
+            transition: background 0.2s;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }}
+
+        .cat-label:hover {{ background: rgba(255,255,255,0.05); }}
+        .cat-label i {{ transition: transform 0.3s; font-style: normal; }}
+        .cat-label.collapsed i {{ transform: rotate(-90deg); }}
+        
+        .cat-items {{
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }}
+        
+        .cat-items.collapsed {{
+            display: none;
         }}
 
         .btn-icon-export {{
@@ -756,9 +771,18 @@ def generate_site():
                 const label = document.createElement('div');
                 label.className = 'cat-label';
                 label.innerHTML = `
-                    <span>${{cat}} (${{prods.length}})</span>
-                    <button class="btn-icon-export" onclick="exportCategory('${{cat}}')" title="Export Kategori Ini">📊 Export</button>
+                    <span><i>▼</i> ${{cat}} (${{prods.length}})</span>
+                    <button class="btn-icon-export" onclick="event.stopPropagation(); exportCategory('${{cat}}')" title="Export Kategori Ini">📊 Export</button>
                 `;
+                
+                const itemsContainer = document.createElement('div');
+                itemsContainer.className = 'cat-items';
+                
+                label.onclick = () => {{
+                    label.classList.toggle('collapsed');
+                    itemsContainer.classList.toggle('collapsed');
+                }};
+                
                 group.appendChild(label);
 
                 prods.forEach(p => {{
@@ -774,8 +798,9 @@ def generate_site():
                         contentCard.style.display = 'block';
                         refresh();
                     }};
-                    group.appendChild(item);
+                    itemsContainer.appendChild(item);
                 }});
+                group.appendChild(itemsContainer);
                 navList.appendChild(group);
             }}
         }}
