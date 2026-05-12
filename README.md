@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="300" alt="ShopeeBot Logo">
+</p>
+
 # 🛍️ ShopeeBot Scraper
 
 ShopeeBot Scraper adalah sebuah alat otomatisasi (Automation Tool) berbasis Python untuk melakukan scraping produk, mengumpulkan data spesifikasi, serta mengirimkan pesan massal (broadcast) kepada penjual (seller) di platform Shopee.
@@ -106,10 +110,10 @@ Anda akan melihat tampilan **ShopeeBot Automation Control Panel** yang elegan de
 ███████╗██╗  ██╗ ██████╗ ██████╗ ███████╗███████╗
 ██╔════╝██║  ██║██╔═══██╗██╔══██╗██╔════╝██╔════╝
 ███████╗███████║██║   ██║██████╔╝█████╗  █████╗  
-╚════██║██╔══██║██║   ██║██╔═══╝ ██╔══╝  ██╔══╝  
+|════██║██╔══██║██║   ██║██╔═══╝ ██╔══╝  ██╔══╝  
 ███████║██║  ██║╚██████╔╝██║     ███████╗███████╗
 ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚══════╝╚══════╝
-                               BOT SCRAPER               
+                                BOT SCRAPER               
 =======================================================
         All-in-One Automation Tools for Shopee         
 =======================================================
