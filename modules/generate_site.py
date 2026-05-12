@@ -213,8 +213,9 @@ def generate_site():
         }}
 
         .cat-label:hover {{ background: rgba(255,255,255,0.05); }}
-        .cat-label i {{ transition: transform 0.3s; font-style: normal; }}
-        .cat-label.collapsed i {{ transform: rotate(-90deg); }}
+        .cat-label i {{ transition: transform 0.3s; font-style: normal; display: inline-block; width: 12px; }}
+        .cat-label.collapsed i {{ transform: rotate(0deg); }}
+        .cat-label i {{ transform: rotate(90deg); }}
         
         .cat-items {{
             overflow: hidden;
@@ -769,14 +770,14 @@ def generate_site():
                 group.className = 'cat-group';
                 
                 const label = document.createElement('div');
-                label.className = 'cat-label';
+                label.className = 'cat-label collapsed';
                 label.innerHTML = `
-                    <span><i>▼</i> ${{cat}} (${{prods.length}})</span>
+                    <span><i>▶</i> ${{cat}} (${{prods.length}})</span>
                     <button class="btn-icon-export" onclick="event.stopPropagation(); exportCategory('${{cat}}')" title="Export Kategori Ini">📊 Export</button>
                 `;
                 
                 const itemsContainer = document.createElement('div');
-                itemsContainer.className = 'cat-items';
+                itemsContainer.className = 'cat-items collapsed';
                 
                 label.onclick = () => {{
                     label.classList.toggle('collapsed');
