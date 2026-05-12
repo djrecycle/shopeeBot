@@ -16,6 +16,9 @@ parser.add_argument("--gui", action="store_true")
 parser.add_argument("--keyword", type=str)
 parser.add_argument("--category", type=str)
 parser.add_argument("--pages", type=str)
+parser.add_argument("--sort", type=str)
+parser.add_argument("--location", type=str)
+parser.add_argument("--rating", type=str)
 args, unknown = parser.parse_known_args()
 
 # Default keywords jika user tidak menginputkan
@@ -140,6 +143,12 @@ def input_max_page():
 
 def pilih_urutan():
     """Tampilkan menu pemilihan urutan dan kembalikan query string-nya."""
+    if args.sort:
+        if args.sort in SORT_OPTIONS:
+            selected = SORT_OPTIONS[args.sort]
+            print(f"✅ Urutan dipilih (CLI): {selected['label']}")
+            return selected["params"]
+
     print("\n📊 Pilih Urutan Pencarian:")
     print("─" * 30)
     for key, opt in SORT_OPTIONS.items():
@@ -163,6 +172,16 @@ def pilih_urutan():
 
 def pilih_lokasi():
     """Tampilkan menu pemilihan lokasi/kota penjual."""
+    if args.location:
+        pilihan_list = [p.strip() for p in args.location.split(",") if p.strip()]
+        if "1" in pilihan_list:
+            return [], "Semua Lokasi"
+        if all(p in LOKASI_OPTIONS for p in pilihan_list):
+            lokasi_values = [LOKASI_OPTIONS[p]["value"] for p in pilihan_list]
+            lokasi_labels = [LOKASI_OPTIONS[p]["label"] for p in pilihan_list]
+            print(f"✅ Lokasi dipilih (CLI): {', '.join(lokasi_labels)}")
+            return lokasi_values, ', '.join(lokasi_labels)
+
     print("\n📍 Pilih Lokasi Penjual:")
     print("─" * 40)
     # Tampilkan dalam 2 kolom agar lebih rapi
@@ -206,6 +225,14 @@ def pilih_lokasi():
 
 def input_rating_filter():
     """Minta input minimum rating dari user. Default 4.9."""
+    if args.rating:
+        try:
+            val = float(args.rating)
+            print(f"✅ Filter rating (CLI): ≥ {val} ⭐")
+            return val
+        except:
+            pass
+
     print("\n⭐ Filter Rating Minimum:")
     print("─" * 30)
     print("  Masukkan rating minimum (0.0 - 5.0)")
@@ -305,10 +332,17 @@ def start_chrome():
             "google-chrome",
             "--remote-debugging-port=9222",
             f"--user-data-dir={chrome_profile}",
-            "--no-first-run"
+            "--no-first-run",
+            "--start-maximized"
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         time.sleep(5)
+
+    # Bawa Chrome ke depan
+    try:
+        subprocess.Popen(["wmctrl", "-a", "Chrome"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except:
+        pass
 
 
 def scrape_links():
@@ -348,7 +382,7 @@ def scrape_links():
             return
 
         context = browser.contexts[0] if browser.contexts else browser.new_context()
-        page = context.pages[0] if context.pages else context.new_page()
+        page = context.new_page()
 
         all_links = []  # Kumpulan semua link dari semua target
 

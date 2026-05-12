@@ -13,6 +13,10 @@ parser.add_argument("--gui", action="store_true")
 parser.add_argument("--keyword", type=str)
 parser.add_argument("--category", type=str)
 parser.add_argument("--pages", type=str)
+parser.add_argument("--max-urls", type=str)
+parser.add_argument("--target-keyword", type=str)
+parser.add_argument("--target-category", type=str)
+parser.add_argument("--force", action="store_true")
 args, unknown = parser.parse_known_args()
 # ========================
 # LOAD URL DARI FILE
@@ -24,94 +28,65 @@ VARIASI = ["Warna", "Model", "Mode", "Ukuran", "Kapasitas", "Tipe", "Tipe Hp", "
 
 def load_urls():
     if args.keyword:
-        print(f"📋 Menggunakan URL manual dari GUI: {args.keyword}")
+        print(f"📋 Menggunakan URL manual: {args.keyword}")
         cat = args.category if args.category else "Uncategorized"
         return [{"url": args.keyword, "kategori": cat}]
         
-    if "--gui" in sys.argv:
-        user_url = ""
-    else:
-        user_url = input("\nMasukkan URL Shopee yang ingin discrape (biarkan kosong untuk mengambil dari shopee_links.csv): ").strip()
-    if user_url:
-        print(f"📋 Memproses 1 URL dari input manual.")
-        cat = get_category()
-        return [{"url": user_url, "kategori": cat}]
-
     import pandas as pd
     try:
         df = pd.read_csv(URL_FILE, dtype={"Status": str}) if "Status" in pd.read_csv(URL_FILE, nrows=0).columns else pd.read_csv(URL_FILE)
     except FileNotFoundError:
-        print(f"❌ File {URL_FILE} tidak ditemukan. Silakan jalankan scrape_links.py terlebih dahulu.")
+        print(f"❌ File {URL_FILE} tidak ditemukan.")
         exit()
     
-    # Tambahkan kolom Status jika belum ada
     if "Status" not in df.columns:
         df["Status"] = ""
     else:
         df["Status"] = df["Status"].fillna("")
         
-    # Ambil baris yang belum di-"Done" atau di-"Skip"
-    # Menambahkan pengecekan status tambahan jika ada format lain
-    unscraped_df = df[~df["Status"].isin(["Done", "Skip", "Skip (Toko Sama)", "Failed", "Sent"])]
+    # Filter status
+    if args.force:
+        print("⚡ Mode Force: Memproses ulang semua produk.")
+        unscraped_df = df.copy()
+    else:
+        unscraped_df = df[~df["Status"].isin(["Done", "Skip", "Skip (Toko Sama)", "Failed", "Sent"])]
 
     if unscraped_df.empty:
-        print("🎉 Semua URL di shopee_links.csv sudah selesai discrape!")
+        print("🎉 Semua URL sudah selesai discrape!")
         exit()
 
-    # Berikan pilihan Keyword/Toko
-    if "Keyword" in df.columns:
-        keywords = unscraped_df["Keyword"].value_counts()
-        print("\n📂 Pilih kelompok URL yang ingin discrape:")
-        print("─" * 30)
-        print("  [0] Semua Keyword/Toko (Campur)")
-        
-        kw_list = list(keywords.items())
-        for i, (kw, count) in enumerate(kw_list, 1):
-            print(f"  [{i}] {kw} ({count} url belum diproses)")
-        print("─" * 30)
-        
-        while True:
-            if "--gui" in sys.argv:
-                pilihan = ""
-            else:
-                pilihan = input("Masukkan nomor pilihan (default: 0): ").strip()
-            
-            if pilihan == "" or pilihan == "0":
-                print("✅ Memilih semua URL yang tersisa.")
-                break
-            try:
-                idx = int(pilihan) - 1
-                if 0 <= idx < len(kw_list):
-                    selected_kw = kw_list[idx][0]
-                    unscraped_df = unscraped_df[unscraped_df["Keyword"] == selected_kw]
-                    print(f"✅ Memilih URL dengan target: {selected_kw}")
-                    break
-                else:
-                    print("❌ Nomor tidak valid.")
-            except ValueError:
-                print("❌ Input harus berupa angka.")
+    # Filter target category
+    if args.target_category and args.target_category != "Semua":
+        if "Kategori" in unscraped_df.columns:
+            unscraped_df = unscraped_df[unscraped_df["Kategori"] == args.target_category]
+            print(f"📁 Filter Kategori: {args.target_category}")
 
+    # Filter target keyword
+    if args.target_keyword and args.target_keyword != "Semua":
+        unscraped_df = unscraped_df[unscraped_df["Keyword"] == args.target_keyword]
+        print(f"🎯 Target Keyword/Toko: {args.target_keyword}")
+
+    max_p = int(args.max_urls) if args.max_urls and args.max_urls.isdigit() else MAX_URLS
     urls = unscraped_df["Link Produk"].dropna().tolist()
 
     if not urls:
-        print("🎉 Tidak ada URL tersedia pada pilihan tersebut!")
+        print("🎉 Tidak ada URL tersedia!")
         exit()
 
-    urls = urls[:MAX_URLS]
-    print(f"📋 Akan memproses: {len(urls)} URL pada batch ini (max {MAX_URLS})")
+    urls = urls[:max_p]
+    print(f"📋 Akan memproses: {len(urls)} URL (max {max_p})")
     
     result = []
     for link in urls:
         row = unscraped_df[unscraped_df["Link Produk"] == link].iloc[0]
-        cat = getattr(row, "Kategori", "Uncategorized") if "Kategori" in df.columns else "Uncategorized"
-        import pandas as pd
+        cat = getattr(row, "Kategori", "Uncategorized")
         if pd.isna(cat) or not str(cat).strip():
             cat = "Uncategorized"
         result.append({"url": link, "kategori": str(cat)})
         
     return result
 
-def update_status(url, status):
+def update_status(url, status, shop_name=None):
     """Update status (Done/Skip) produk di CSV."""
     import pandas as pd
     try:
@@ -122,6 +97,12 @@ def update_status(url, status):
             df["Status"] = df["Status"].fillna("")
             
         df.loc[df["Link Produk"] == url, "Status"] = status
+        
+        if shop_name:
+            if "Toko" not in df.columns:
+                df["Toko"] = ""
+            df.loc[df["Link Produk"] == url, "Toko"] = shop_name
+            
         df.to_csv(URL_FILE, index=False)
     except Exception as e:
         print(f"⚠️ Gagal mengupdate status CSV: {e}")
@@ -185,9 +166,16 @@ def scrape_shopee():
                 "google-chrome",
                 "--remote-debugging-port=9222",
                 f"--user-data-dir={chrome_profile}",
-                "--no-first-run"
+                "--no-first-run",
+                "--start-maximized"
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(4)
+
+        # Bawa Chrome ke depan
+        try:
+            subprocess.Popen(["wmctrl", "-a", "Chrome"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except:
+            pass
             
         print("Menyambungkan script Python ke Jendela Chrome tadi...")
         try:
@@ -197,7 +185,7 @@ def scrape_shopee():
             return
             
         context = browser.contexts[0] if len(browser.contexts) > 0 else browser.new_context()
-        page = context.pages[0] if len(context.pages) > 0 else context.new_page()
+        page = context.new_page()
 
         try:
             try:
@@ -270,25 +258,36 @@ def scrape_shopee():
             if idx > 1:
                 delay = random.uniform(3, 7)
                 print(f"⏳ Menunggu {delay:.1f} detik...")
-                page.wait_for_timeout(int(delay * 1000))
+                try:
+                    page.wait_for_timeout(int(delay * 1000))
+                except Exception:
+                    print("⚠️ Browser/tab tertutup saat menunggu. Mencoba reconnect...")
+                    try:
+                        context = browser.contexts[0] if browser.contexts else browser.new_context()
+                        page = context.pages[0] if context.pages else context.new_page()
+                        page.goto("https://shopee.co.id", timeout=60000)
+                        page.wait_for_timeout(3000)
+                    except Exception:
+                        print("❌ Gagal reconnect, menghentikan scraping.")
+                        break
 
             # ========================
-            # BUKA DI NEW TAB via window.open()
+            # BUKA DI NEW TAB
             # ========================
-            tabs_before = len(context.pages)
-
-            # Gunakan JavaScript window.open() — terlihat seperti user klik link
-            page.evaluate(f'window.open("{url}", "_blank")')
-            page.wait_for_timeout(3000)
-
-            # Ambil tab baru
-            if len(context.pages) <= tabs_before:
-                print("❌ Gagal membuka tab baru, skip.")
+            new_page = None
+            try:
+                new_page = context.new_page()
+                print(f"🌐 Navigasi ke URL produk...")
+                new_page.goto(url, timeout=60000)
+                new_page.wait_for_timeout(4000)
+                print("✅ Tab baru terbuka")
+            except Exception as e:
+                print(f"❌ Gagal membuka tab: {e}, skip.")
                 update_status(url, "Skip")
+                if new_page:
+                    try: new_page.close()
+                    except: pass
                 continue
-
-            new_page = context.pages[-1]  # Tab terakhir = yang baru dibuka
-            new_page.wait_for_timeout(4000)
 
             # ========================
             # DETEKSI BLOCK
@@ -361,6 +360,51 @@ def scrape_shopee():
                 except:
                     pass
                 continue
+
+            # ========================
+            # NAMA TOKO
+            # ========================
+            real_shop_name = ""
+            try:
+                # Menggunakan text_content() lebih aman dari inner_text() karena mengambil teks meskipun elemen tersembunyi/off-screen
+                selectors = [
+                    'div.fV3TIn',
+                    'section.page-product__shop a[href^="/"] > div > div:first-child',
+                    'section.page-product__shop div.flex > div:first-child',
+                    '.VlD_hi',
+                    '.shop-name-text',
+                    'a.shopee-shop-card__shop-name',
+                    '.FDn--\\+'
+                ]
+                
+                for sel in selectors:
+                    el = new_page.locator(sel)
+                    if el.count() > 0:
+                        t = el.first.text_content()
+                        if t:
+                            t = t.split("\n")[0].strip()
+                            if len(t) > 2:
+                                real_shop_name = t
+                                break
+
+                if not real_shop_name:
+                    # Alternatif cadangan dengan evaluasi Javascript untuk mencari elemen di sekitar tombol "Kunjungi Toko"
+                    real_shop_name = new_page.evaluate("""() => {
+                        let btn = Array.from(document.querySelectorAll('button, a, div')).find(e => e.innerText && e.innerText.includes('Kunjungi Toko'));
+                        if (btn) {
+                            let shopSection = btn.closest('section') || btn.closest('.page-product__shop');
+                            if (shopSection) {
+                                let nameEl = shopSection.querySelector('a[href^="/"] > div > div:first-child, .fV3TIn, .VlD_hi, h3');
+                                if (nameEl) return nameEl.innerText.split('\\n')[0].trim();
+                            }
+                        }
+                        return "";
+                    }""")
+            except:
+                pass
+            
+            if not real_shop_name or len(real_shop_name.strip()) < 2:
+                real_shop_name = "Toko Tidak Diketahui"
 
             try:
                 price_element = new_page.locator('text=/Rp[\\d\\.,]+/')
@@ -605,7 +649,7 @@ def scrape_shopee():
                 print(f"✔ Disimpan: {filename}.md")
                 
             # Tandai selesai di CSV
-            update_status(url, "Done")
+            update_status(url, "Done", shop_name=real_shop_name)
 
         # Bersihkan
         print(f"\n{'='*50}")

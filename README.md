@@ -81,14 +81,15 @@ Bot ini dilengkapi dengan antarmuka terminal interaktif yang sangat mudah diguna
 
 ## 🚀 Cara Penggunaan
 
-Penggunaan bot ini sangat gampang karena telah disatukan ke dalam satu menu. Cukup jalankan perintah ini pada terminal/command prompt:
+Penggunaan bot ini sekarang jauh lebih gampang dan modern berkat antarmuka grafis (GUI) terbaru. Cukup jalankan perintah ini pada terminal/command prompt:
 
 ```bash
-python ShopeeBot.py
+python gui_main.py
 ```
 
-Anda akan melihat tampilan Header Menu:
-```
+Anda akan melihat tampilan **ShopeeBot Automation Control Panel** yang elegan dengan welcome screen seperti ini di Console:
+
+```text
 =======================================================
 ███████╗██╗  ██╗ ██████╗ ██████╗ ███████╗███████╗
 ██╔════╝██║  ██║██╔═══██╗██╔══██╗██╔════╝██╔════╝
@@ -100,27 +101,19 @@ Anda akan melihat tampilan Header Menu:
 =======================================================
         All-in-One Automation Tools for Shopee         
 =======================================================
-
-Menu Utama:
-  [1] Login Shopee   - Buka browser & login dulu (PENTING)
-  [2] Scrape Links   - Cari link produk & simpan ke CSV
-  [3] Scrape Produk  - Ambil info produk, variasi, & gambar
-  [4] Send Message   - Kirim pesan promo ke toko
-  [5] Preview Hasil  - Lihat hasil scrape dalam bentuk website
-  [6] Update Produk  - Perbarui/Re-scrape produk yang sudah di-scrape
-  [0] Keluar
-───────────────────────────────────────────────────────
 ```
 
-Pilih **Nomor Menu** sesuai dengan apa yang akan Anda jalankan:
-- **[1] Login Shopee**: Langkah awal yang sangat disarankan. Buka browser melalui menu ini untuk Login ke akun Shopee Anda secara manual agar sesi/cookie tersimpan.
-- **[2] Scrape Links**: Mulailah dari sini untuk mengumpulkan link ke dalam CSV.
-- **[3] Scrape Produk**: Jika CSV sudah berisi data link, gunakan menu ini untuk mengekstrak detail produk dan mengunduh foto/gambar produk.
-- **[4] Send Message**: Gunakan menu ini untuk mem-broadcast chat ke seller berdasarkan data yang sudah ada di CSV.
-- **[5] Preview Hasil**: Gunakan menu ini untuk melihat seluruh hasil scraping Anda dalam bentuk dashboard website yang modern dan interaktif. Anda juga dapat mengubah persentase Harga Upload dan melakukan Ekspor ke file Excel untuk keperluan *Mass Upload*.
-- **[6] Update Produk**: Gunakan menu ini untuk men-scrape ulang (memperbarui) data produk yang sudah pernah di-scrape sebelumnya (misal ketika ada perubahan harga dari toko sumber atau update fitur baru pada scraper).
+**Navigasi Menu Sidebar:**
+- **🏠 Dashboard**: Pusat kendali utama Anda. Dari sini Anda bisa mengatur *Keyword*, *Kategori*, dan jumlah halaman, lalu menjalankan berbagai tugas:
+  - **🔑 Login**: Buka browser khusus bot untuk login ke akun Shopee Anda secara manual agar sesi/cookie tersimpan (Sangat Disarankan).
+  - **🔗 Link Scraper**: Cari dan kumpulkan ratusan link produk berdasarkan target keyword/toko ke dalam database.
+  - **📦 Product Scraper**: Buka jendela konfigurasi tingkat lanjut untuk mengekstrak detail produk (judul, variasi, harga, gambar) dari link yang sudah dikumpulkan. Mendukung filter bertingkat berdasarkan Kategori dan Keyword.
+  - **💬 Messenger**: Kirim pesan massal (broadcast) promo/afiliasi kepada penjual.
+- **📊 Lihat Database**: Tampilan tabel interaktif untuk memonitor, mengurutkan, dan menghapus data link yang ada di `shopee_links.csv`. Menampilkan nama Toko dan status scrape secara *real-time*.
+- **🌐 Generate Site**: Hasilkan dan buka langsung dashboard *Preview Hasil* berwujud website lokal yang keren. Di web ini Anda bisa menyesuaikan persentase Harga Upload dan mendownloadnya dalam bentuk `.xlsx`.
+- **📂 Manajer File MD**: Jelajahi, baca, dan kelola file-file Markdown berisi data detail tiap produk yang sudah berhasil di-scrape tanpa perlu repot membuka file manager bawaan OS.
 
----
+───────────────────────────────────────────────────────
 
 ## 📂 Struktur File dan Folder
 

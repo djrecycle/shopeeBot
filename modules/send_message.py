@@ -11,10 +11,15 @@ parser.add_argument("--gui", action="store_true")
 parser.add_argument("--keyword", type=str)
 parser.add_argument("--category", type=str)
 parser.add_argument("--pages", type=str)
+parser.add_argument("--message", type=str)
+parser.add_argument("--max-urls", type=str)
 args, unknown = parser.parse_known_args()
 URL_FILE = "shopee_links.csv"
-MAX_URLS = 5  # Batasi per run agar terhindar dari pemblokiran akun/rate limit
+MAX_URLS = int(args.max_urls) if args.max_urls and args.max_urls.isdigit() else 5  # Batasi per run agar terhindar dari pemblokiran akun/rate limit
+
 DEFAULT_MESSAGE = "Halo kak, apakah toko ini menerima dropship dan bisa menggunakan resi otomatis?, jika saya diizinkan menjadi dropshipper bolehkah saya meminta kontak yang bisa dihubungi agar mempermudah komunikasi?,, mohon maaf mengganggu waktunya kak"
+if args.message and args.message.strip():
+    DEFAULT_MESSAGE = args.message.strip()
 
 def load_urls():
     import re
@@ -30,20 +35,27 @@ def load_urls():
     else:
         df["Status Chat"] = df["Status Chat"].fillna("")
         
-    def get_shop_id(url):
-        # Format dasar Shopee: ...-i.{shop_id}.{item_id}
-        match = re.search(r'-i\.(\d+)\.\d+', str(url))
-        return match.group(1) if match else None
+    def get_shop_id(row):
+        # Jika ada nama toko di CSV, itu yang paling akurat
+        if "Toko" in row and pd.notna(row["Toko"]) and str(row["Toko"]).strip() not in ["", "-", "nan"]:
+            return str(row["Toko"]).strip()
+        # Fallback format URL Shopee: ...-i.{shop_id}.{item_id}
+        match = re.search(r'-i\.(\d+)\.\d+', str(row.get("Link Produk", "")))
+        if match:
+            return match.group(1)
+        return str(row.get("Link Produk", ""))
 
-    # Kumpulkan Shop ID dari toko yang SUDAH dikirimi pesan ("Sent")
+    # Kumpulkan Shop ID/Nama Toko dari toko yang SUDAH dikirimi pesan ("Sent")
     sent_df = df[df["Status Chat"] == "Sent"]
     sent_shop_ids = set()
     for _, row in sent_df.iterrows():
-        sid = get_shop_id(row["Link Produk"])
+        sid = get_shop_id(row)
         if sid: sent_shop_ids.add(sid)
         
     # --- OPSI FILTER ---
+    choice = '1'
     filtered_df = df.copy()
+    
     if args.category:
         filtered_df = df[df['Kategori'] == args.category]
         print(f"✅ Filter aktif dari GUI: Kategori '{args.category}'")
@@ -55,11 +67,9 @@ def load_urls():
     elif "Kategori" in df.columns and "Keyword" in df.columns:
         print("2. Berdasarkan Kategori")
         print("3. Berdasarkan Keyword")
-        choice = input("Pilih opsi (1/2/3) [default: 1]: ").strip()
-    else:
-        choice = '1'
-        
-    filtered_df = df.copy()
+        user_choice = input("Pilih opsi (1/2/3) [default: 1]: ").strip()
+        if user_choice in ['1', '2', '3']:
+            choice = user_choice
     if choice == '2':
         categories = [c for c in df['Kategori'].dropna().unique() if str(c).strip()]
         if categories:
@@ -100,7 +110,7 @@ def load_urls():
     
     for _, row in unmessaged_df.iterrows():
         url = row["Link Produk"]
-        sid = get_shop_id(url)
+        sid = get_shop_id(row)
         
         # JIKA toko dari produk ini sudah pernah dikirimi pesan di link yg lain
         if sid and sid in sent_shop_ids:
@@ -108,6 +118,8 @@ def load_urls():
             skipped_count += 1
         else:
             urls_to_process.append(url)
+            if sid:
+                sent_shop_ids.add(sid)
             
     # Jika ada yang diskip otomatis karena toko sama, save update ke CSV
     if skipped_count > 0:
