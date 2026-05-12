@@ -50,13 +50,21 @@ Bot ini dilengkapi dengan antarmuka terminal interaktif yang sangat mudah diguna
 
 ## ⚙️ Instalasi
 
-1. **Clone repositori ini (opsional jika mendownload ZIP):**
+### 🐧 Khusus Linux (Paling Cepat)
+Jika Anda menggunakan Linux, Anda bisa menggunakan launcher otomatis yang akan menyiapkan segalanya untuk Anda:
+```bash
+chmod +x shopeeBot.sh
+./shopeeBot.sh
+```
+
+### 🪟 Cara Manual (Windows/macOS/Linux)
+1. **Clone repositori ini:**
    ```bash
-   git clone https://github.com/username/ShopeeBot.git
-   cd ShopeeBot
+   git clone https://github.com/djrecycle/shopeeBot.git
+   cd shopeeBot
    ```
 
-2. **Buat dan aktifkan virtual environment (Disarankan):**
+2. **Buat dan aktifkan virtual environment:**
    ```bash
    # Di Linux / macOS
    python3 -m venv venv
@@ -67,22 +75,26 @@ Bot ini dilengkapi dengan antarmuka terminal interaktif yang sangat mudah diguna
    .\venv\Scripts\activate
    ```
 
-3. **Install dependensi library yang dibutuhkan:**
+3. **Install dependensi & Browser:**
    ```bash
    pip install -r requirements.txt
-   ```
-
-4. **Install Browser bawaan Playwright:**
-   ```bash
-   playwright install
+   playwright install chromium
    ```
 
 ---
 
 ## 🚀 Cara Penggunaan
 
-Penggunaan bot ini sekarang jauh lebih gampang dan modern berkat antarmuka grafis (GUI) terbaru. Cukup jalankan perintah ini pada terminal/command prompt:
+Penggunaan bot ini sekarang jauh lebih gampang dan modern berkat antarmuka grafis (GUI) terbaru.
 
+**Untuk Linux:**
+Cukup jalankan launcher:
+```bash
+./shopeeBot.sh
+```
+
+**Untuk Umum (Terminal):**
+Jalankan perintah ini:
 ```bash
 python gui_main.py
 ```
