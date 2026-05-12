@@ -19,12 +19,10 @@ def print_header():
     print("        All-in-One Automation Tools for Shopee         ")
     print("=======================================================\n")
 
-def run_script(script_name, args=None):
-    if args is None:
-        args = []
-    print(f"\n🚀 Menjalankan {script_name} {' '.join(args)}...\n")
+def run_script(script_name):
+    print(f"\n🚀 Menjalankan {script_name}...\n")
     try:
-        subprocess.run([sys.executable, script_name] + args)
+        subprocess.run([sys.executable, script_name])
     except KeyboardInterrupt:
         print(f"\n[!] Eksekusi {script_name} dibatalkan oleh pengguna.")
     except Exception as e:
@@ -41,11 +39,10 @@ def main():
         print("  [3] Scrape Produk  - Ambil info produk, variasi, & gambar")
         print("  [4] Send Message   - Kirim pesan promo ke toko")
         print("  [5] Preview Hasil  - Lihat hasil scrape dalam bentuk website")
-        print("  [6] Update Produk  - Perbarui/Re-scrape produk yang sudah di-scrape")
         print("  [0] Keluar")
         print("─" * 55)
         
-        pilihan = input("Masukkan nomor menu (0-6): ").strip()
+        pilihan = input("Masukkan nomor menu (0-5): ").strip()
         
         if pilihan == "1":
             run_script("open_browser.py")
@@ -57,8 +54,6 @@ def main():
             run_script("send_message.py")
         elif pilihan == "5":
             run_script("generate_site.py")
-        elif pilihan == "6":
-            run_script("shoppescrap.py", args=["--update"])
         elif pilihan == "0":
             print("\nTerima kasih telah menggunakan ShopeeBot Scraper. Sampai jumpa! 👋")
             sys.exit(0)

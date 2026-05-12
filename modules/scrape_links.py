@@ -1,3 +1,5 @@
+import sys
+import argparse
 from playwright.sync_api import sync_playwright
 import requests
 import subprocess
@@ -7,6 +9,14 @@ import re
 import json
 import urllib.parse
 import pandas as pd
+
+# Global parser for easy access
+parser = argparse.ArgumentParser()
+parser.add_argument("--gui", action="store_true")
+parser.add_argument("--keyword", type=str)
+parser.add_argument("--category", type=str)
+parser.add_argument("--pages", type=str)
+args, unknown = parser.parse_known_args()
 
 # Default keywords jika user tidak menginputkan
 DEFAULT_KEYWORDS = [
@@ -65,6 +75,8 @@ def pilih_mode():
     print("  [2] Berdasarkan Toko Spesifik (Username/URL)")
     print("─" * 30)
     while True:
+        if "--gui" in sys.argv:
+            return "keyword"
         pilihan = input("Masukkan nomor mode (default: 1): ").strip()
         if pilihan == "" or pilihan == "1":
             return "keyword"
@@ -74,9 +86,15 @@ def pilih_mode():
             print("❌ Pilihan tidak valid, coba lagi.")
 
 def input_target(mode):
+    if args.keyword:
+        print(f"✅ Menggunakan keyword dari GUI: {args.keyword}")
+        return [k.strip() for k in args.keyword.split(",") if k.strip()]
+    
     if mode == "keyword":
         print("\n🔑 Masukkan Keyword (pisahkan dengan koma jika lebih dari satu):")
         print("Biarkan kosong untuk menggunakan keyword default.")
+        if "--gui" in sys.argv:
+            return DEFAULT_KEYWORDS
         raw = input("Keyword: ").strip()
         if not raw:
             return DEFAULT_KEYWORDS
@@ -101,6 +119,15 @@ def input_target(mode):
 
 def input_max_page():
     print("\n📄 Mengambil berapa halaman? (default: 1)")
+    if args.pages:
+        print(f"✅ Menggunakan jumlah halaman dari GUI: {args.pages}")
+        try:
+            return int(args.pages)
+        except:
+            return 1
+    
+    if "--gui" in sys.argv:
+        return 1
     raw = input("Max Page: ").strip()
     if not raw:
         return 1
@@ -120,7 +147,10 @@ def pilih_urutan():
     print("─" * 30)
 
     while True:
-        pilihan = input("Masukkan nomor (default: 3 - Terlaris): ").strip()
+        if "--gui" in sys.argv:
+            pilihan = "3"
+        else:
+            pilihan = input("Masukkan nomor (default: 3 - Terlaris): ").strip()
         if pilihan == "":
             pilihan = "3"  # Default: Terlaris
         if pilihan in SORT_OPTIONS:
@@ -150,7 +180,10 @@ def pilih_lokasi():
     print("─" * 40)
 
     while True:
-        raw = input("Masukkan nomor lokasi (default: 1 - Semua): ").strip()
+        if "--gui" in sys.argv:
+            raw = "1"
+        else:
+            raw = input("Masukkan nomor lokasi (default: 1 - Semua): ").strip()
         if raw == "":
             raw = "1"
 
@@ -180,7 +213,10 @@ def input_rating_filter():
     print("─" * 30)
 
     while True:
-        raw = input("Rating minimum (default: 4.9): ").strip()
+        if "--gui" in sys.argv:
+            raw = ""
+        else:
+            raw = input("Rating minimum (default: 4.9): ").strip()
         if raw == "":
             print("✅ Filter rating: ≥ 4.9 ⭐")
             return 4.9
@@ -224,7 +260,15 @@ def pilih_kategori():
     print(f"  [{len(categories) + 1}] ➕ Buat / Masukkan Kategori Baru")
     print("─" * 30)
     
+    if args.category:
+        print(f"✅ Menggunakan kategori dari GUI: {args.category}")
+        return args.category
+
     while True:
+        if "--gui" in sys.argv:
+            if categories:
+                return categories[0]
+            return "Uncategorized"
         pilihan = input("Masukkan nomor pilihan: ").strip()
         try:
             idx = int(pilihan) - 1
@@ -342,7 +386,10 @@ def scrape_links():
 
             if is_blocked:
                 print("\n⚠️ Login / captcha diperlukan!")
-                input("Selesaikan di browser lalu tekan ENTER...")
+                if "--gui" in sys.argv:
+                    pass # Skip prompt in GUI
+                else:
+                    input("Selesaikan di browser lalu tekan ENTER...")
                 page.wait_for_timeout(3000)
 
             # ========================

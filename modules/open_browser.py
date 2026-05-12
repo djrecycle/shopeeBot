@@ -2,6 +2,7 @@ import os
 import time
 import subprocess
 import requests
+import sys
 from playwright.sync_api import sync_playwright
 
 def start_chrome():
@@ -58,7 +59,10 @@ def login_shopee():
             print("="*50)
             
             print("\nSesi tersimpan di: shopee_debug_profile")
-            input("\nTekan ENTER di sini jika sudah selesai login dan ingin menutup script...")
+            if "--gui" in sys.argv:
+                print("\n✅ Browser terbuka. Silakan login di jendela Chrome.")
+            else:
+                input("\nTekan ENTER di sini jika sudah selesai login dan ingin menutup script...")
             
             print("✅ Selesai. Browser akan tetap berjalan di background.")
             

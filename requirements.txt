@@ -2,3 +2,6 @@ pandas
 playwright
 playwright-stealth
 requests
+customtkinter
+packaging
+Pillow

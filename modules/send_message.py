@@ -1,8 +1,17 @@
+import sys
+import argparse
 import pandas as pd
 import random
 import os
 from playwright.sync_api import sync_playwright
 
+# Global parser
+parser = argparse.ArgumentParser()
+parser.add_argument("--gui", action="store_true")
+parser.add_argument("--keyword", type=str)
+parser.add_argument("--category", type=str)
+parser.add_argument("--pages", type=str)
+args, unknown = parser.parse_known_args()
 URL_FILE = "shopee_links.csv"
 MAX_URLS = 5  # Batasi per run agar terhindar dari pemblokiran akun/rate limit
 DEFAULT_MESSAGE = "Halo kak, apakah toko ini menerima dropship dan bisa menggunakan resi otomatis?, jika saya diizinkan menjadi dropshipper bolehkah saya meminta kontak yang bisa dihubungi agar mempermudah komunikasi?,, mohon maaf mengganggu waktunya kak"
@@ -34,9 +43,16 @@ def load_urls():
         if sid: sent_shop_ids.add(sid)
         
     # --- OPSI FILTER ---
-    print("\n--- Opsi Target Pesan ---")
-    print("1. Semua Data (Tanpa Filter)")
-    if "Kategori" in df.columns and "Keyword" in df.columns:
+    filtered_df = df.copy()
+    if args.category:
+        filtered_df = df[df['Kategori'] == args.category]
+        print(f"✅ Filter aktif dari GUI: Kategori '{args.category}'")
+    elif args.keyword:
+        filtered_df = df[df['Keyword'] == args.keyword]
+        print(f"✅ Filter aktif dari GUI: Keyword '{args.keyword}'")
+    elif "--gui" in sys.argv:
+        print("ℹ️ Menjalankan semua data (GUI mode)")
+    elif "Kategori" in df.columns and "Keyword" in df.columns:
         print("2. Berdasarkan Kategori")
         print("3. Berdasarkan Keyword")
         choice = input("Pilih opsi (1/2/3) [default: 1]: ").strip()
@@ -151,7 +167,10 @@ def send_messages():
             if "verify" in homepage_url or "traffic/error" in homepage_url:
                 print("⚠️  Homepage terblokir!")
                 print("   Buka shopee.co.id manual di address bar browser.")
-                input("   Tekan ENTER setelah homepage Shopee terbuka normal...")
+                if "--gui" in sys.argv:
+                    pass # Skip prompt in GUI
+                else:
+                    input("   Tekan ENTER setelah homepage Shopee terbuka normal...")
                 page.wait_for_timeout(2000)
         except:
             pass
@@ -200,7 +219,10 @@ def send_messages():
                 print("⚠️ Halaman terblokir! Menunggu manual input...")
                 print(f"   1. Buka di tab tersebut URL ini secara manual.")
                 print("   2. Selesaikan verifikasi.")
-                input("   ➡️ Tekan ENTER jika produk sudah tampil normal...")
+                if "--gui" in sys.argv:
+                    pass # Skip prompt in GUI
+                else:
+                    input("   ➡️ Tekan ENTER jika produk sudah tampil normal...")
                 new_page.wait_for_timeout(2000)
                 
             # Tunggu halaman muat dengan sempurna dan scroll sedikit ke bawah
