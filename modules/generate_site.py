@@ -465,6 +465,70 @@ def generate_site():
 
         .empty-state svg {{ width: 64px; height: 64px; margin-bottom: 20px; opacity: 0.2; }}
 
+        /* --- Modal Popup Style --- */
+        .modal {{
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }}
+
+        .modal.show {{
+            display: flex;
+            opacity: 1;
+        }}
+
+        .modal-content {{
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }}
+
+        .modal.show .modal-content {{
+            transform: scale(1);
+        }}
+
+        .modal-close {{
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            color: #94A3B8;
+            font-size: 36px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            user-select: none;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+        }}
+
+        .modal-close:hover {{
+            color: #fff;
+            background: rgba(255, 77, 45, 0.2);
+            border-color: var(--primary);
+            transform: rotate(90deg);
+        }}
+
     </style>
 </head>
 <body>
@@ -513,6 +577,12 @@ def generate_site():
             <h2>Pilih produk untuk melihat preview</h2>
             <p>Data diambil dari folder hasil_md</p>
         </div>
+    </div>
+
+    <!-- Modal Popup Gambar Original -->
+    <div id="img-modal" class="modal" onclick="closeModal()">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modal-img" onclick="event.stopPropagation();" />
     </div>
 
     <script>
@@ -722,7 +792,14 @@ def generate_site():
                     ? Array.from(vh.nextElementSibling.querySelectorAll('li'))
                     : [];
 
+                // Check if any of the variations has an image link
+                const hasAnyImg = items.some(li => li.querySelector('a'));
+
                 items.forEach(li => {{
+                    // Check if there is an image link in the list item
+                    const aTag = li.querySelector('a');
+                    const imgUrl = aTag ? aTag.getAttribute('href') : null;
+
                     const text = li.innerText.split('|')[0];
                     const parts = text.split(':');
                     if (parts.length >= 2) {{
@@ -730,8 +807,23 @@ def generate_site():
                         const price = parts[parts.length-1].trim().split('(')[0].trim();
                         
                         const tr = document.createElement('tr');
+                        
+                        // Prepare the image element HTML if available
+                        let imgHtml = '';
+                        if (hasAnyImg) {{
+                            if (imgUrl) {{
+                                imgHtml = `<img src="${{imgUrl}}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s;" onclick="showImage('${{imgUrl}}')" />`;
+                            }} else {{
+                                imgHtml = `<div style="width: 48px; height: 48px; border-radius: 8px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; opacity: 0.3; font-size: 1.2rem;">📦</div>`;
+                            }}
+                        }}
+
+                        const nameTdContent = hasAnyImg 
+                            ? `<div style="display: flex; align-items: center; gap: 16px;">${{imgHtml}}<span>${{name}}</span></div>`
+                            : `<span>${{name}}</span>`;
+
                         tr.innerHTML = `
-                            <td>${{name}}</td>
+                            <td>${{nameTdContent}}</td>
                             <td><span class="var-old-price">Asli: ${{price}}</span>${{calcPrice(price, p)}}</td>
                         `;
                         table.appendChild(tr);
@@ -752,7 +844,7 @@ def generate_site():
                 images.forEach(src => {{
                     const img = document.createElement('img');
                     img.src = src;
-                    img.onclick = () => window.open(src, '_blank');
+                    img.onclick = () => showImage(src);
                     grid.appendChild(img);
                 }});
                 result.appendChild(grid);
@@ -878,6 +970,27 @@ def generate_site():
                 setTimeout(() => btn.innerText = old, 2000);
             }});
         }}
+
+        function showImage(src) {{
+            const modal = document.getElementById('img-modal');
+            const modalImg = document.getElementById('modal-img');
+            modalImg.src = src;
+            modal.style.display = 'flex';
+            modal.offsetHeight; // Force reflow
+            modal.classList.add('show');
+        }}
+
+        function closeModal() {{
+            const modal = document.getElementById('img-modal');
+            modal.classList.remove('show');
+            setTimeout(() => {{
+                modal.style.display = 'none';
+            }}, 300);
+        }}
+
+        document.addEventListener('keydown', (e) => {{
+            if (e.key === 'Escape') closeModal();
+        }});
 
         markupSlider.oninput = (e) => {{
             markupVal.innerText = e.target.value + "%";
