@@ -388,7 +388,29 @@ def scrape_links():
 
         for target_index, target in enumerate(targets):
             print(f"\n{'='*50}")
-            if mode == "keyword":
+            # Auto-detect if target is a shop URL or shop username
+            is_shop = False
+            if "shopee.co.id/" in target or target.startswith("http://") or target.startswith("https://"):
+                is_shop = True
+            elif mode == "toko":
+                is_shop = True
+
+            if is_shop:
+                # Extract username from URL if necessary
+                username = target
+                if "shopee.co.id/" in target:
+                    username = target.split("shopee.co.id/")[-1].split("?")[0].strip("/")
+                elif target.startswith("http://") or target.startswith("https://"):
+                    username = target.split("/")[-1].split("?")[0].strip("/")
+                else:
+                    username = target.strip("/")
+                
+                print(f"🏪 Target [{target_index+1}/{len(targets)}] (Toko): {username}")
+                base_url = f"https://shopee.co.id/{username}?page=0"
+                url = f"{base_url}&{sort_params}" if sort_params else base_url
+                if lokasi_values:
+                    print("ℹ️  Filter lokasi tidak berlaku untuk mode Toko dan akan diabaikan.")
+            else:
                 print(f"🔑 Target [{target_index+1}/{len(targets)}] (Keyword): {target}")
                 base_url = f"https://shopee.co.id/search?keyword={target}"
                 url = f"{base_url}&{sort_params}" if sort_params else base_url
@@ -397,12 +419,6 @@ def scrape_links():
                     filter_obj = [{"group_name": "LOCATIONS", "values": lokasi_values}]
                     filter_json = json.dumps(filter_obj, separators=(",", ":"))
                     url += f"&fe_filter_options={urllib.parse.quote(filter_json)}"
-            else:
-                print(f"🏪 Target [{target_index+1}/{len(targets)}] (Toko): {target}")
-                base_url = f"https://shopee.co.id/{target}?page=0"
-                url = f"{base_url}&{sort_params}" if sort_params else base_url
-                if lokasi_values:
-                    print("ℹ️  Filter lokasi tidak berlaku untuk mode Toko dan akan diabaikan.")
             print(f"{'='*50}")
             if lokasi_label != "Semua Lokasi":
                 print(f"📍 Filter Lokasi: {lokasi_label}")
@@ -569,7 +585,7 @@ def scrape_links():
             for item in keyword_links:
                 if item["link"] not in seen:
                     seen.add(item["link"])
-                    keyword_label = target if mode == "keyword" else f"Toko: {target}"
+                    keyword_label = f"Toko: {username}" if is_shop else target
                     all_links.append({
                         "Kategori": kategori_pilihan,
                         "Keyword": keyword_label,

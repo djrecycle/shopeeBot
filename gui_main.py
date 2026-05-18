@@ -472,7 +472,7 @@ class ShopeeBotGUI(ctk.CTk):
 ╚════██║██╔══██║██║   ██║██╔═══╝ ██╔══╝  ██╔══╝  
 ███████║██║  ██║╚██████╔╝██║     ███████╗███████╗
 ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚══════╝╚══════╝
-                               BOT SCRAPER               
+                    BOT SCRAPER LAUNCHER v1.0.0-beta             
 =======================================================
         All-in-One Automation Tools for Shopee         
 =======================================================
@@ -741,7 +741,7 @@ class ShopeeBotGUI(ctk.CTk):
             links_to_delete = set()
             for item in selected:
                 vals = self.tree.item(item, "values")
-                if vals and len(vals) > 4: links_to_delete.add(vals[4])
+                if vals and len(vals) > 5: links_to_delete.add(vals[5])
             try:
                 df = pd.read_csv("shopee_links.csv")
                 df = df[~df["Link Produk"].isin(links_to_delete)]
@@ -861,26 +861,88 @@ class ShopeeBotGUI(ctk.CTk):
     def delete_selected_files(self):
         selected = self.file_tree.selection()
         if not selected:
-            self.log("⚠️ Pilih file yang ingin dihapus terlebih dahulu.")
+            self.log("⚠️ Pilih file atau kategori yang ingin dihapus terlebih dahulu.")
             return
             
-        dialog = ctk.CTkInputDialog(text=f"Hapus {len(selected)} file markdown secara permanen?\nKetik 'ya' untuk konfirmasi:", title="Konfirmasi Hapus File")
+        # Gather all files and directories to delete
+        files_to_delete = set()
+        dirs_to_delete = set()
+        
+        for item in selected:
+            children = self.file_tree.get_children(item)
+            vals = self.file_tree.item(item, "values")
+            
+            is_parent = False
+            if children:
+                is_parent = True
+            elif vals and (len(vals) <= 3 or not vals[3]):
+                is_parent = True
+                
+            if is_parent:
+                cat_name = self.file_tree.item(item, "text").strip()
+                cat_dir = os.path.join("hasil_md", cat_name)
+                dirs_to_delete.add(cat_dir)
+                
+                for child in children:
+                    c_vals = self.file_tree.item(child, "values")
+                    if c_vals and len(c_vals) > 3 and c_vals[3]:
+                        files_to_delete.add(c_vals[3])
+            else:
+                if vals and len(vals) > 3 and vals[3]:
+                    files_to_delete.add(vals[3])
+                    
+        if not files_to_delete and not dirs_to_delete:
+            self.log("⚠️ Pilih file atau kategori yang ingin dihapus terlebih dahulu.")
+            return
+            
+        total_items = len(files_to_delete)
+        if dirs_to_delete and not files_to_delete:
+            msg = f"Hapus {len(dirs_to_delete)} kategori kosong secara permanen?\nKetik 'ya' untuk konfirmasi:"
+        elif dirs_to_delete:
+            msg = f"Hapus {len(dirs_to_delete)} kategori dan {total_items} file markdown secara permanen?\nKetik 'ya' untuk konfirmasi:"
+        else:
+            msg = f"Hapus {total_items} file markdown secara permanen?\nKetik 'ya' untuk konfirmasi:"
+            
+        dialog = ctk.CTkInputDialog(text=msg, title="Konfirmasi Hapus")
         result = dialog.get_input()
         if result and result.lower() == "ya":
-            deleted_count = 0
-            for item in selected:
-                vals = self.file_tree.item(item, "values")
-                if vals and len(vals) > 4:
-                    file_path = vals[4]
-                    try:
-                        if os.path.exists(file_path):
-                            os.remove(file_path)
-                            deleted_count += 1
-                    except Exception as e:
-                        self.log(f"❌ Gagal menghapus {vals[2]}: {e}")
+            deleted_files = 0
+            deleted_dirs = 0
             
-            self.log(f"🗑️ {deleted_count} file berhasil dihapus.")
+            # Delete files
+            for file_path in files_to_delete:
+                try:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        deleted_files += 1
+                except Exception as e:
+                    self.log(f"❌ Gagal menghapus file {os.path.basename(file_path)}: {e}")
+                    
+            # Delete directories
+            import shutil
+            for cat_dir in dirs_to_delete:
+                try:
+                    if os.path.exists(cat_dir):
+                        shutil.rmtree(cat_dir)
+                        deleted_dirs += 1
+                except Exception as e:
+                    self.log(f"❌ Gagal menghapus folder {os.path.basename(cat_dir)}: {e}")
+            
+            log_msg = "🗑️ "
+            if deleted_files > 0:
+                log_msg += f"{deleted_files} file "
+            if deleted_dirs > 0:
+                if deleted_files > 0:
+                    log_msg += f"dan {deleted_dirs} folder "
+                else:
+                    log_msg += f"{deleted_dirs} folder "
+            log_msg += "berhasil dihapus."
+            self.log(log_msg)
+            
             self.load_file_data()
+            
+            # Regenerate the preview site in background!
+            self.run_script("generate_site.py", {"no_open": True})
 
     def open_preview_file(self):
         if os.path.exists("preview.html"): webbrowser.open("file://" + os.path.abspath("preview.html"))
@@ -901,6 +963,7 @@ class ShopeeBotGUI(ctk.CTk):
         for k in ["keyword", "category", "pages", "max-urls", "target-keyword"]:
             if params.get(k.replace("-","_")): cmd.extend([f"--{k}", params[k.replace("-","_")]])
         if params.get("force"): cmd.append("--force")
+        if params.get("no_open"): cmd.append("--no-open")
         if script_name == "scrape_links.py":
             cmd.extend(["--sort", params.get("sort", "3"), "--location", params.get("location", "1")])
             if params.get("rating"): cmd.extend(["--rating", params["rating"]])

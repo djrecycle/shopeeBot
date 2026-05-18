@@ -1,6 +1,7 @@
 import os
 import json
 import webbrowser
+import sys
 
 def generate_site():
     print("🌐 Memulai pembuatan website preview...")
@@ -895,7 +896,8 @@ def generate_site():
             f.write(html_template)
         print(f"✅ Website preview Berhasil diperbaiki: {output_file}")
         file_url = "file://" + os.path.abspath(output_file)
-        webbrowser.open(file_url)
+        if "--no-open" not in sys.argv:
+            webbrowser.open(file_url)
     except Exception as e:
         print(f"❌ Gagal: {e}")
 

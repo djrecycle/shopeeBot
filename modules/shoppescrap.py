@@ -24,7 +24,7 @@ args, unknown = parser.parse_known_args()
 URL_FILE = "shopee_links.csv"
 MAX_URLS = 5  # Batasi jumlah URL yang diproses
 VARIASI = ["Warna", "Model", "Mode", "Ukuran", "Kapasitas", "Tipe", "Tipe Hp", "Type Hp","Type", "Varian", "Size", "Color","Piano", "Keyboard", "Keyboard", "Piano","Senar","Senar Gitar","Senar Bass","Senar Bass Elektrik","Senar Nomor"
-"Nomor Senar","Motif","Jenis","Jenis Barang"]
+"Nomor Senar","Motif","Jenis","Jenis Barang","Paket","EQ preamp","EQ","preamp"]
 
 def load_urls():
     if args.keyword:
