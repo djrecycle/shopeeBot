@@ -113,7 +113,7 @@ Anda akan melihat tampilan **ShopeeBot Automation Control Panel** yang elegan de
 |════██║██╔══██║██║   ██║██╔═══╝ ██╔══╝  ██╔══╝  
 ███████║██║  ██║╚██████╔╝██║     ███████╗███████╗
 ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚══════╝╚══════╝
-                  BOT SCRAPER LAUNCHER v1.0.0-beta             
+                  BOT SCRAPER LAUNCHER v1.0.1-beta             
 =======================================================
         All-in-One Automation Tools for Shopee         
 =======================================================
