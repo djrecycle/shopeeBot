@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="assets/logo.png" width="300" alt="ShopeeBot Logo">
-</p>
+![ShopeeBot Logo](assets/logo.png)
 
 # 🛍️ ShopeeBot Scraper
 
@@ -54,6 +52,22 @@ Bot ini dilengkapi dengan antarmuka terminal interaktif yang sangat mudah diguna
 
 ## ⚙️ Instalasi
 
+### 📦 Instalasi via Package Debian (.deb) - Rekomendasi untuk Ubuntu/Debian
+Jika Anda menggunakan sistem operasi berbasis Debian (seperti Ubuntu, Linux Mint, Kali Linux, dll), cara termudah dan terekomendasi adalah menggunakan file instalasi `.deb`. Seluruh konfigurasi (termasuk Virtual Environment, dependensi Python, Node.js, dan akses _database_) akan diatur secara otomatis ke dalam `/opt/shopeebot`.
+
+1. **Download file `.deb` terbaru** dari *Releases* di repositori ini (atau temukan file `shopeebot_1.0.1-beta_amd64.deb` di direktori *project* lokal Anda).
+2. **Install package menggunakan `apt` atau `dpkg`**:
+   ```bash
+   sudo apt update
+   sudo dpkg -i shopeebot_1.0.1-beta_amd64.deb
+   
+   # Jika muncul error karena dependensi sistem yang belum lengkap, jalankan:
+   sudo apt --fix-broken install
+   ```
+3. Selesai! Anda sekarang dapat membuka aplikasinya langsung dari menu aplikasi (Application Menu/App Drawer) di Desktop Anda dengan mencari **ShopeeBot Pro**, atau dengan menjalankan perintah `shopeebot` di terminal kapan saja.
+
+---
+
 ### 🐧 Khusus Linux (Paling Cepat)
 Jika Anda menggunakan Linux, Anda bisa menggunakan launcher otomatis yang akan menyiapkan segalanya untuk Anda:
 ```bash
@@ -71,12 +85,12 @@ chmod +x shopeeBot.sh
 2. **Buat dan aktifkan virtual environment:**
    ```bash
    # Di Linux / macOS
-   python3 -m venv venv
-   source venv/bin/activate
+   python3 -m venv shopee-venv
+   source shopee-venv/bin/activate
 
    # Di Windows
-   python -m venv venv
-   .\venv\Scripts\activate
+   python -m venv shopee-venv
+   .\shopee-venv\Scripts\activate
    ```
 
 3. **Install dependensi & Browser:**
@@ -98,8 +112,12 @@ Cukup jalankan launcher:
 ```
 
 **Untuk Umum (Terminal):**
-Jalankan perintah ini:
+Pastikan virtual environment telah aktif, lalu jalankan perintah ini:
 ```bash
+# Aktifkan virtual environment (Linux/macOS)
+source shopee-venv/bin/activate
+
+# Jalankan aplikasi
 python gui_main.py
 ```
 

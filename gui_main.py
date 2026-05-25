@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import customtkinter as ctk
 import subprocess
 import sys
@@ -5,7 +6,8 @@ import os
 import threading
 import pandas as pd
 import webbrowser
-from tkinter import ttk
+import zipfile
+from tkinter import ttk, filedialog, messagebox
 from PIL import Image
 
 # Set appearance and theme
@@ -437,17 +439,27 @@ class ShopeeBotGUI(ctk.CTk):
         self.sort_options = {"Terlaris": "3", "Terbaru": "2", "Relevan": "1", "Harga Terendah": "4", "Harga Tertinggi": "5"}
         self.location_data = {"1": {"label": "Semua Lokasi", "value": ""}, "2": {"label": "Jabodetabek", "value": "Jabodetabek"}, "3": {"label": "Jawa Barat", "value": "Jawa Barat"}, "4": {"label": "Jawa Tengah", "value": "Jawa Tengah"}, "5": {"label": "Jawa Timur", "value": "Jawa Timur"}, "6": {"label": "Banten", "value": "Banten"}, "7": {"label": "DI Yogyakarta", "value": "DI Yogyakarta"}, "8": {"label": "Bali", "value": "Bali"}, "9": {"label": "Sumatera Utara", "value": "Sumatera Utara"}, "10": {"label": "Sumatera Selatan", "value": "Sumatera Selatan"}, "11": {"label": "Sumatera Barat", "value": "Sumatera Barat"}, "12": {"label": "Riau", "value": "Riau"}, "13": {"label": "Kepulauan Riau", "value": "Kepulauan Riau"}, "14": {"label": "Lampung", "value": "Lampung"}, "15": {"label": "Kalimantan Barat", "value": "Kalimantan Barat"}, "16": {"label": "Kalimantan Selatan", "value": "Kalimantan Selatan"}, "17": {"label": "Kalimantan Timur", "value": "Kalimantan Timur"}, "18": {"label": "Sulawesi Selatan", "value": "Sulawesi Selatan"}, "19": {"label": "Sulawesi Utara", "value": "Sulawesi Utara"}, "20": {"label": "Nusa Tenggara Barat", "value": "Nusa Tenggara Barat"}, "21": {"label": "Aceh", "value": "Aceh"}, "22": {"label": "Jambi", "value": "Jambi"}, "23": {"label": "Bengkulu", "value": "Bengkulu"}, "24": {"label": "Kalimantan Tengah", "value": "Kalimantan Tengah"}, "25": {"label": "Sulawesi Tengah", "value": "Sulawesi Tengah"}, "26": {"label": "Sulawesi Tenggara", "value": "Sulawesi Tenggara"}, "27": {"label": "Papua", "value": "Papua"}, "28": {"label": "Maluku", "value": "Maluku"}}
         self.selected_location_ids = "1"
+        self.web_server_process = None
         self.grid_columnconfigure(1, weight=1); self.grid_rowconfigure(0, weight=1)
         self.sidebar_frame = ctk.CTkFrame(self, width=200, corner_radius=0, fg_color=self.sidebar_color)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
         ctk.CTkLabel(self.sidebar_frame, text="🛍️ ShopeeBot", font=ctk.CTkFont(size=24, weight="bold"), text_color=self.orange_color).grid(row=0, column=0, padx=20, pady=(30, 30))
-        for i, (txt, cmd) in enumerate([("🏠 Dashboard", self.show_dashboard), ("📊 Lihat Database", self.show_database_view), ("🌐 Generate Site", lambda: self.run_script("generate_site.py")), ("📂 Manajer File MD", self.show_file_view)], 2):
+        
+        sidebar_items = [
+            ("🏠 Dashboard", self.show_dashboard),
+            ("📊 Lihat Database", self.show_database_view),
+            ("🌐 Generate Site", lambda: self.run_script("generate_site.py")),
+            ("🌐 Web Profesional", self.show_web_prof_view),
+            ("📂 Manajer File MD", self.show_file_view)
+        ]
+        for i, (txt, cmd) in enumerate(sidebar_items, 2):
             self.create_sidebar_button(txt, cmd, i)
+            
         self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color=self.bg_color)
         self.main_frame.grid(row=0, column=1, sticky="nsew"); self.main_frame.grid_columnconfigure(0, weight=1); self.main_frame.grid_rowconfigure(1, weight=1)
         self.header_label = ctk.CTkLabel(self.main_frame, text="ShopeeBot Dashboard", font=ctk.CTkFont(size=22, weight="bold"))
         self.header_label.grid(row=0, column=0, padx=40, pady=(40, 20), sticky="w")
-        self.create_home_view(); self.create_database_view(); self.create_file_view(); self.show_dashboard()
+        self.create_home_view(); self.create_database_view(); self.create_file_view(); self.create_web_prof_view(); self.show_dashboard()
         self.status_label = ctk.CTkLabel(self.main_frame, text="Status: Ready", font=ctk.CTkFont(size=11), fg_color="#19191e")
         self.status_label.grid(row=2, column=0, sticky="ew")
 
@@ -572,6 +584,7 @@ class ShopeeBotGUI(ctk.CTk):
         self.home_frame.grid_forget()
         self.database_frame.grid_forget()
         if hasattr(self, 'file_frame'): self.file_frame.grid_forget()
+        if hasattr(self, 'web_prof_frame'): self.web_prof_frame.grid_forget()
 
     def show_dashboard(self): self.hide_all_views(); self.home_frame.grid(row=1, column=0, sticky="nsew")
     def show_database_view(self): self.hide_all_views(); self.database_frame.grid(row=1, column=0, sticky="nsew"); self.load_table_data()
@@ -748,6 +761,8 @@ class ShopeeBotGUI(ctk.CTk):
                 df.to_csv("shopee_links.csv", index=False)
                 self.log(f"🗑️ {len(links_to_delete)} baris berhasil dihapus.")
                 self.load_table_data()
+                if hasattr(self, 'run_web_sync'):
+                    self.run_web_sync()
             except Exception as e: self.log(f"❌ Gagal menghapus: {e}")
 
     def delete_all_rows(self):
@@ -759,6 +774,8 @@ class ShopeeBotGUI(ctk.CTk):
                 df.iloc[0:0].to_csv("shopee_links.csv", index=False)
                 self.log("🗑️ Semua data berhasil dihapus.")
                 self.load_table_data()
+                if hasattr(self, 'run_web_sync'):
+                    self.run_web_sync()
             except Exception as e: self.log(f"❌ Gagal menghapus: {e}")
 
     # ==========================================
@@ -943,6 +960,10 @@ class ShopeeBotGUI(ctk.CTk):
             
             # Regenerate the preview site in background!
             self.run_script("generate_site.py", {"no_open": True})
+            
+            # Auto sync to Web Profesional
+            if hasattr(self, 'run_web_sync'):
+                self.run_web_sync()
 
     def open_preview_file(self):
         if os.path.exists("preview.html"): webbrowser.open("file://" + os.path.abspath("preview.html"))
@@ -977,6 +998,248 @@ class ShopeeBotGUI(ctk.CTk):
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, universal_newlines=True, env=env)
             for line in process.stdout: self.after(0, self.log, line.strip())
             process.wait(); self.after(0, lambda: self.log(f"✅ Finished {script_name}"))
-        except Exception as e: self.after(0, lambda: self.log(f"⚠️ Error: {str(e)}"))
+        except Exception as e:
+            self.after(0, lambda err=str(e): self.log(f"❌ Gagal menjalankan {script_name}: {err}"))
+    def show_web_prof_view(self):
+        self.hide_all_views()
+        self.web_prof_frame.grid(row=1, column=0, sticky="nsew")
+        self.update_server_status_ui()
 
-if __name__ == "__main__": app = ShopeeBotGUI(); app.mainloop()
+    def create_web_prof_view(self):
+        self.web_prof_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        self.web_prof_frame.grid_columnconfigure(0, weight=1)
+        self.web_prof_frame.grid_rowconfigure(2, weight=1)
+
+        # Header bar
+        self.wp_header = ctk.CTkFrame(self.web_prof_frame, fg_color="#19191e", corner_radius=12, height=60)
+        self.wp_header.grid(row=0, column=0, padx=30, pady=(10, 0), sticky="ew")
+        self.wp_header.grid_propagate(False)
+        ctk.CTkLabel(self.wp_header, text="🌐 Web Katalog & Dashboard Profesional", font=ctk.CTkFont(size=16, weight="bold"), text_color="#EE4D2D").pack(side="left", padx=20)
+        
+        # Server Status Control Section
+        self.wp_control = ctk.CTkFrame(self.web_prof_frame, fg_color="#19191e", corner_radius=10)
+        self.wp_control.grid(row=1, column=0, pady=(20, 10), sticky="ew", padx=30)
+        self.wp_control.grid_columnconfigure((0, 1, 2, 3), weight=1)
+
+        # Server Status label
+        self.wp_status_label = ctk.CTkLabel(self.wp_control, text="Server Web: OFFLINE", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E74C3C")
+        self.wp_status_label.grid(row=0, column=0, columnspan=4, pady=(15, 10))
+
+        # Control Buttons
+        self.wp_btn_setup = ctk.CTkButton(self.wp_control, text="🚀 Inisialisasi & Sync", fg_color=self.orange_color, hover_color=self.orange_hover, font=ctk.CTkFont(size=12, weight="bold"), command=self.run_web_setup)
+        self.wp_btn_setup.grid(row=1, column=0, padx=10, pady=15, sticky="ew")
+
+        self.wp_btn_sync = ctk.CTkButton(self.wp_control, text="⚡ Sinkronisasi Data", fg_color="#1a6b3c", hover_color="#219150", font=ctk.CTkFont(size=12, weight="bold"), command=self.run_web_sync)
+        self.wp_btn_sync.grid(row=1, column=1, padx=10, pady=15, sticky="ew")
+
+        self.wp_btn_start = ctk.CTkButton(self.wp_control, text="▶️ Jalankan Server", fg_color="#2980B9", hover_color="#3498DB", font=ctk.CTkFont(size=12, weight="bold"), command=self.start_web_server)
+        self.wp_btn_start.grid(row=1, column=2, padx=10, pady=15, sticky="ew")
+
+        self.wp_btn_stop = ctk.CTkButton(self.wp_control, text="⏹️ Hentikan Server", fg_color="#C0392B", hover_color="#E74C3C", font=ctk.CTkFont(size=12, weight="bold"), state="disabled", command=self.stop_web_server)
+        self.wp_btn_stop.grid(row=1, column=3, padx=10, pady=15, sticky="ew")
+
+        self.wp_btn_open = ctk.CTkButton(self.wp_control, text="🌐 Buka Website", fg_color="#8E44AD", hover_color="#9B59B6", font=ctk.CTkFont(size=12, weight="bold"), command=lambda: webbrowser.open("http://localhost:3000"))
+        self.wp_btn_open.grid(row=2, column=0, columnspan=2, padx=10, pady=(0, 15), sticky="ew")
+
+        self.wp_btn_export = ctk.CTkButton(self.wp_control, text="📦 Eksport Web Dashboard", fg_color="#D35400", hover_color="#E67E22", font=ctk.CTkFont(size=12, weight="bold"), command=self.export_web_dashboard)
+        self.wp_btn_export.grid(row=2, column=2, columnspan=2, padx=10, pady=(0, 15), sticky="ew")
+
+        # Console Log Box
+        self.wp_console = ctk.CTkTextbox(self.web_prof_frame, corner_radius=10, fg_color="#1e1e24", text_color="#3498db", font=ctk.CTkFont(family="Courier", size=13))
+        self.wp_console.grid(row=2, column=0, sticky="nsew", pady=(0, 20), padx=30)
+        self.wp_console_log("Selamat datang di Konsol Web Profesional ShopeeBot!\nKlik 'Inisialisasi & Sync' jika ini pertama kalinya Anda menjalankan fitur ini.")
+
+    def wp_console_log(self, message):
+        self.wp_console.configure(state="normal")
+        self.wp_console.insert("end", message + "\n")
+        self.wp_console.see("end")
+        self.wp_console.configure(state="disabled")
+
+    def update_server_status_ui(self):
+        if self.web_server_process is not None:
+            self.wp_status_label.configure(text="Server Web: RUNNING (http://localhost:3000)", text_color="#2ECC71")
+            self.wp_btn_start.configure(state="disabled")
+            self.wp_btn_stop.configure(state="normal")
+        else:
+            self.wp_status_label.configure(text="Server Web: OFFLINE", text_color="#E74C3C")
+            self.wp_btn_start.configure(state="normal")
+            self.wp_btn_stop.configure(state="disabled")
+
+    def run_web_setup(self):
+        self.wp_console_log("\n🚀 Memulai proses inisialisasi Web Profesional (Next.js & SQLite)...")
+        self.wp_console_log("Langkah ini akan menginstal dependensi npm dan memigrasikan semua data. Mohon tunggu...")
+        
+        def execute():
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            python_path = sys.executable
+            script_path = os.path.join("modules", "generate_nextjs_site.py")
+            cmd = [python_path, script_path, "setup"]
+            
+            try:
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, universal_newlines=True, cwd=base_dir)
+                for line in process.stdout:
+                    self.after(0, self.wp_console_log, line.strip())
+                process.wait()
+                if process.poll() == 0:
+                    self.after(0, self.wp_console_log, "✅ Inisialisasi & Sinkronisasi Selesai Sukses!")
+                else:
+                    self.after(0, self.wp_console_log, "❌ Inisialisasi Gagal dengan status code.")
+            except Exception as e:
+                self.after(0, self.wp_console_log, f"⚠️ Error: {str(e)}")
+                
+        threading.Thread(target=execute, daemon=True).start()
+
+    def run_web_sync(self):
+        self.wp_console_log("\n🚀 Memulai sinkronisasi data scraper ke SQLite database...")
+        
+        def execute():
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            python_path = sys.executable
+            script_path = os.path.join("modules", "generate_nextjs_site.py")
+            cmd = [python_path, script_path, "sync"]
+            
+            try:
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, universal_newlines=True, cwd=base_dir)
+                for line in process.stdout:
+                    self.after(0, self.wp_console_log, line.strip())
+                process.wait()
+                if process.poll() == 0:
+                    self.after(0, self.wp_console_log, "✅ Sinkronisasi Database SQLite Selesai Sukses!")
+                else:
+                    self.after(0, self.wp_console_log, "❌ Sinkronisasi Database SQLite Gagal.")
+            except Exception as e:
+                self.after(0, self.wp_console_log, f"⚠️ Error: {str(e)}")
+                
+        threading.Thread(target=execute, daemon=True).start()
+
+    def start_web_server(self):
+        if self.web_server_process is not None:
+            return
+            
+        self.wp_console_log("\n🚀 Memulai server Next.js di background...")
+        
+        def execute():
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            web_dir = os.path.join(base_dir, "web_dashboard")
+            # Next.js dev command
+            cmd = ["npm", "run", "dev"]
+            
+            env = os.environ.copy()
+            env["NODE_OPTIONS"] = "--no-deprecation"
+            
+            try:
+                kwargs = {}
+                if os.name == 'posix':
+                    kwargs['preexec_fn'] = os.setsid
+                    
+                self.web_server_process = subprocess.Popen(
+                    cmd,
+                    cwd=web_dir,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    universal_newlines=True,
+                    env=env,
+                    **kwargs
+                )
+                
+                self.after(0, self.update_server_status_ui)
+                self.after(0, self.wp_console_log, "✅ Server Next.js dimulai. Menunggu koneksi...")
+                
+                for line in self.web_server_process.stdout:
+                    self.after(0, self.wp_console_log, line.strip())
+                    
+                self.web_server_process.wait()
+            except Exception as e:
+                self.after(0, self.wp_console_log, f"⚠️ Server Error: {str(e)}")
+            finally:
+                self.web_server_process = None
+                self.after(0, self.update_server_status_ui)
+                self.after(0, self.wp_console_log, "⏹️ Server Next.js dihentikan.")
+                
+        threading.Thread(target=execute, daemon=True).start()
+
+    def stop_web_server(self):
+        if self.web_server_process is not None:
+            self.wp_console_log("\n⏹️ Menghentikan server Next.js...")
+            import signal
+            try:
+                if os.name == 'posix':
+                    os.killpg(os.getpgid(self.web_server_process.pid), signal.SIGTERM)
+                else:
+                    self.web_server_process.terminate()
+                self.web_server_process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                if os.name == 'posix':
+                    try:
+                        os.killpg(os.getpgid(self.web_server_process.pid), signal.SIGKILL)
+                    except:
+                        pass
+                else:
+                    self.web_server_process.kill()
+            except Exception as e:
+                self.wp_console_log(f"⚠️ Gagal menghentikan server: {str(e)}")
+            
+            self.web_server_process = None
+            self.update_server_status_ui()
+
+    def export_web_dashboard(self):
+        self.wp_console_log("\n📦 Memulai proses eksport folder web_dashboard...")
+        
+        # 1. Ask user where to save the ZIP file
+        initial_file = "web_dashboard_export.zip"
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".zip",
+            filetypes=[("ZIP Archive", "*.zip")],
+            initialfile=initial_file,
+            title="Pilih Lokasi untuk Menyimpan Eksport Web Dashboard"
+        )
+        
+        if not file_path:
+            self.wp_console_log("⚠️ Eksport dibatalkan oleh pengguna.")
+            return
+            
+        self.wp_console_log(f"📂 Lokasi tujuan: {file_path}")
+        self.wp_console_log("⚡ Mengompresi folder web_dashboard (mengabaikan node_modules & .next)...")
+        
+        def do_zip():
+            import time
+            
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            web_dir = os.path.join(base_dir, "web_dashboard")
+            
+            if not os.path.exists(web_dir):
+                self.after(0, lambda: self.wp_console_log("❌ Error: Folder web_dashboard tidak ditemukan!"))
+                self.after(0, lambda: messagebox.showerror("Error", "Folder web_dashboard tidak ditemukan!"))
+                return
+                
+            try:
+                start_time = time.time()
+                total_files_zipped = 0
+                
+                with zipfile.ZipFile(file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                    for root, dirs, files in os.walk(web_dir):
+                        # Skip node_modules and .next directories in-place
+                        dirs[:] = [d for d in dirs if d not in ('node_modules', '.next')]
+                        
+                        for file in files:
+                            full_path = os.path.join(root, file)
+                            # Create relative path inside zip
+                            rel_path = os.path.relpath(full_path, os.path.dirname(web_dir))
+                            zipf.write(full_path, rel_path)
+                            total_files_zipped += 1
+                            
+                duration = time.time() - start_time
+                self.after(0, lambda: self.wp_console_log(f"✅ Eksport selesai! Berhasil mengompresi {total_files_zipped} file dalam {duration:.2f} detik."))
+                self.after(0, lambda: self.wp_console_log(f"📁 File ZIP tersimpan di: {file_path}"))
+                self.after(0, lambda: messagebox.showinfo("Eksport Sukses", f"Folder web_dashboard berhasil dieksport!\n\nLokasi: {file_path}"))
+            except Exception as e:
+                self.after(0, lambda err=str(e): self.wp_console_log(f"❌ Gagal mengeksport: {err}"))
+                self.after(0, lambda err=str(e): messagebox.showerror("Error", f"Gagal mengeksport: {err}"))
+                
+        threading.Thread(target=do_zip, daemon=True).start()
+
+if __name__ == "__main__":
+    app = ShopeeBotGUI()
+    app.mainloop()

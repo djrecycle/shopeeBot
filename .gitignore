@@ -27,3 +27,7 @@ debug.html
 debug.png
 debug_search_*.png
 preview.html
+*.deb
+build_deb/
+.agents/
+JULES_REPORT.md
