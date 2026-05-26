@@ -39,6 +39,33 @@ set -e
 
 echo "⚙️ Configuring ShopeeBot system files..."
 
+# ── Resolve Node.js: prefer nvm-managed Node (>= 20) over system Node ──────
+resolve_node() {
+    # Check if /usr/local/bin/node exists and is >= 20
+    if command -v /usr/local/bin/node &>/dev/null; then
+        local ver
+        ver=$(/usr/local/bin/node -e "process.exit(parseInt(process.versions.node) < 20 ? 1 : 0)" 2>/dev/null && echo "ok" || echo "old")
+        if [ "$ver" = "ok" ]; then
+            export PATH="/usr/local/bin:$PATH"
+            echo "✅ Using Node: $(/usr/local/bin/node --version) via /usr/local/bin"
+            return
+        fi
+    fi
+    # Search for nvm-managed node >= 20 in common locations
+    for NVM_NODE in $(ls -d /home/*/.nvm/versions/node/v[2-9][0-9]*/bin 2>/dev/null | sort -rV); do
+        if [ -x "$NVM_NODE/node" ]; then
+            export PATH="$NVM_NODE:$PATH"
+            # Create symlinks so sudo always finds the right node
+            ln -sf "$NVM_NODE/node" /usr/local/bin/node 2>/dev/null || true
+            ln -sf "$NVM_NODE/npm"  /usr/local/bin/npm  2>/dev/null || true
+            echo "✅ Using Node: $($NVM_NODE/node --version) via nvm at $NVM_NODE"
+            return
+        fi
+    done
+    echo "⚠️  WARNING: Could not find Node >= 20. Using system Node: $(node --version)"
+}
+resolve_node
+
 # 1. Create shared Python virtual environment
 echo "🐍 Setting up Python Virtual Environment..."
 python3 -m venv /opt/shopeebot/shopee-venv
@@ -56,9 +83,32 @@ echo "📦 Installing Next.js dashboard dependencies..."
 cd /opt/shopeebot/web_dashboard
 npm install --legacy-peer-deps
 
-# 4. Synchronize Scraped Data to SQLite database
-echo "⚡ Pre-populating database and synchronizing SQLite..."
-/opt/shopeebot/shopee-venv/bin/python3 /opt/shopeebot/modules/generate_nextjs_site.py sync
+# 4. Create empty data directories and placeholder files (data diisi setelah scraping)
+echo "📁 Creating empty data directories..."
+mkdir -p /opt/shopeebot/gambar
+mkdir -p /opt/shopeebot/hasil_md
+
+# Buat shopee_links.csv kosong dengan header jika belum ada
+if [ ! -f /opt/shopeebot/shopee_links.csv ]; then
+    echo "Kategori,Keyword,Lokasi,Link Produk,Rating,Status Chat,Status,Toko" > /opt/shopeebot/shopee_links.csv
+    echo "📄 Created empty shopee_links.csv with headers"
+fi
+
+# Buat shopee_state.json kosong jika belum ada
+if [ ! -f /opt/shopeebot/shopee_state.json ]; then
+    echo '{}' > /opt/shopeebot/shopee_state.json
+    echo "📄 Created empty shopee_state.json"
+fi
+
+# Sinkronisasi database hanya jika sudah ada data hasil scraping
+LINK_COUNT=$(tail -n +2 /opt/shopeebot/shopee_links.csv 2>/dev/null | grep -c '.' || echo 0)
+PRODUK_COUNT=$(ls /opt/shopeebot/hasil_md/*.md 2>/dev/null | wc -l || echo 0)
+if [ "$LINK_COUNT" -gt 0 ] || [ "$PRODUK_COUNT" -gt 0 ]; then
+    echo "⚡ Data ditemukan, menyinkronisasi ke SQLite database..."
+    /opt/shopeebot/shopee-venv/bin/python3 /opt/shopeebot/modules/generate_nextjs_site.py sync
+else
+    echo "ℹ️  Database kosong — jalankan scraper terlebih dahulu untuk mengisi data."
+fi
 
 # 5. Open all file permissions so local user accounts can execute and modify the database
 echo "🔒 Adjusting folder permissions for multi-user read/write access..."
@@ -132,6 +182,11 @@ rsync -av --exclude="shopee-venv" \
           --exclude="shopee_profile" \
           --exclude="test_profile_2" \
           --exclude="test_profile_3" \
+          --exclude="gambar" \
+          --exclude="hasil_md" \
+          --exclude="shopee_links.csv" \
+          --exclude="shopee_state.json" \
+          --exclude="web_dashboard/database.sqlite" \
           "${WORKSPACE}/" "${BUILD_DIR}/opt/shopeebot/"
 
 # ========================================================
