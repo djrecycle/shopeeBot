@@ -126,6 +126,8 @@ set -e
 echo "🧹 Cleaning up ShopeeBot installation caches and dependencies..."
 rm -rf /opt/shopeebot/shopee-venv
 rm -rf /opt/shopeebot/.cache
+rm -rf /opt/shopeebot/shopee_debug_profile
+rm -rf /opt/shopeebot/shopee_profile
 rm -rf /opt/shopeebot/web_dashboard/node_modules
 rm -rf /opt/shopeebot/web_dashboard/.next
 rm -f /opt/shopeebot/web_dashboard/database.sqlite
